@@ -31,15 +31,6 @@ def get_menu_pdf_url_for_today():
     # 例: https://www.numazu-ct.ac.jp/wp-content/uploads/2025/05/kondate-20250519.pdf
     pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month1}/kondate-{year}{month2}{day}.pdf"
     
-    response = requests.get(pdf_url, timeout=5)
-    if response.status_code == 200:
-        pass
-    else:
-        month1 = int(month1)
-        month1 -= 1
-        month1 = f"{month1:02d}"
-        #print(f"型: {type(month)}")
-        pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month1}/kondate-{year}{month2}{day}.pdf"
     return pdf_url
 
 def main(request):
@@ -52,6 +43,16 @@ def main(request):
     try:
         # 1. 今日の献立表PDFのURLを取得
         pdf_url = get_menu_pdf_url_for_today()
+
+        response = requests.get(pdf_url, timeout=5)
+        if response.status_code == 200:
+            pass
+        else:
+            month1 = int(month1)
+            month1 -= 1
+            month1 = f"{month1:02d}"
+            #print(f"型: {type(month)}")
+            pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month1}/kondate-{year}{month2}{day}.pdf"
 
         # 2. URLからPDFファイルをダウンロード
         response = requests.get(pdf_url)
