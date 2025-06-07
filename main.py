@@ -28,8 +28,8 @@ def get_menu_pdf_url_for_today():
     
     # URLの形式に沿って組み立てる
     # 例: https://www.numazu-ct.ac.jp/wp-content/uploads/2025/05/kondate-20250519.pdf
-    url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month}/kondate-{year}{month}{day}.pdf"
-    return url
+    pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month}/kondate-{year}{month}{day}.pdf"
+    return pdf_url
 
 def check_url():
     try:
