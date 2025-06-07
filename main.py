@@ -5,11 +5,12 @@ import io
 import pdfplumber
 from linebot import LineBotApi
 from linebot.models import TextSendMessage
+import os # ← osをインポートするのを忘れないように
 
 # --- 設定項目 ---
-# TODO: この2つの値をご自身のものに書き換えてください
-CHANNEL_ACCESS_TOKEN = 'ここにステップ1で取得したチャネルアクセストークンを貼り付け'
-USER_ID = 'ここにステップ1で取得したあなたのユーザーIDを貼り付け'
+# GitHub Secretsから安全に読み込む
+CHANNEL_ACCESS_TOKEN = os.getenv('CHANNEL_ACCESS_TOKEN')
+USER_ID = os.getenv('USER_ID')
 
 def get_menu_pdf_url_for_today():
     """
