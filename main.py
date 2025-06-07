@@ -21,17 +21,7 @@ month1 = f"{monday.month:02d}" # 5月なら "05" のようにゼロ埋め
 month2 = f"{monday.month:02d}" # 5月なら "05" のようにゼロ埋め
 day = f"{monday.day:02d}"
 
-def get_menu_pdf_url_for_today():
-    """
-    今日の日付が含まれる週の、献立表PDFのURLを生成する関数。
-    献立表のURLが「その週の月曜日の日付」で生成されていると仮定する。
-    """
-    
-    # URLの形式に沿って組み立てる
-    # 例: https://www.numazu-ct.ac.jp/wp-content/uploads/2025/05/kondate-20250519.pdf
-    pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month1}/kondate-{year}{month2}{day}.pdf"
-    
-    return pdf_url
+pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month1}/kondate-{year}{month2}{day}.pdf"
 
 def main(request):
     """
@@ -105,6 +95,7 @@ def main(request):
         # PDFが見つからなかった場合 (404 Not Foundなど)
         message_text = f"【お知らせ】\n本日の献立表PDFが見つかりませんでした。\nURL: {pdf_url}"
         print(f"HTTPエラー: {e}")
+        print(f"{month1}")
     except Exception as e:
         # その他の予期せぬエラー
         message_text = f"Botの実行中にエラーが発生しました。\n管理者にご連絡ください。\nエラー内容: {e}"
