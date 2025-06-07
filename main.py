@@ -30,7 +30,8 @@ def get_menu_pdf_url_for_today():
     # URLの形式に沿って組み立てる
     # 例: https://www.numazu-ct.ac.jp/wp-content/uploads/2025/05/kondate-20250519.pdf
     pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month1}/kondate-{year}{month2}{day}.pdf"
-        response = requests.get(pdf_url, timeout=5)
+    
+    response = requests.get(pdf_url, timeout=5)
     if response.status_code == 200:
         pass
     else:
