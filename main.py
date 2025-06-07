@@ -17,11 +17,15 @@ today = datetime.date.today()
 # today.weekday() は月曜日が0、日曜日が6なので、今日の日付から曜日の日数分だけ引くと月曜日の日付がわかる
 monday = today - datetime.timedelta(days=today.weekday())
 year = monday.year
-month1 = f"{monday.month:02d}" # 5月なら "05" のようにゼロ埋め
-month2 = f"{monday.month:02d}" # 5月なら "05" のようにゼロ埋め
+month = f"{monday.month:02d}" # 5月なら "05" のようにゼロ埋め
 day = f"{monday.day:02d}"
 
-pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month1}/kondate-{year}{month2}{day}.pdf"
+folderdate = monday - datetime.timedelta(days=7)
+folderyear = str(folderdate.year)
+foldermonth = f"{folderdate.month:02d}"
+
+
+pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folderyear}/{foldermonth}/kondate-{year}{month}{day}.pdf"
 
 def main(request):
     """
@@ -32,8 +36,6 @@ def main(request):
     
     try:
         # 1. 今日の献立表PDFのURLを取得
-        pdf_url = get_menu_pdf_url_for_today()
-
         response = requests.get(pdf_url, timeout=5)
         if response.status_code == 200:
             pass
