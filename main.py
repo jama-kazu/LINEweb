@@ -31,7 +31,7 @@ def get_menu_pdf_url_for_today():
     pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month}/kondate-{year}{month}{day}.pdf"
     return pdf_url
 
-def check_url():
+def check_url(pdf_url):
     try:
         response = requests.get(pdf_url, timeout=5)
         
