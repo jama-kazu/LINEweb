@@ -13,19 +13,7 @@ import os # ← osをインポートするのを忘れないように
 CHANNEL_ACCESS_TOKEN = os.getenv('CHANNEL_ACCESS_TOKEN')
 USER_ID = os.getenv('USER_ID')
 
-today = datetime.date.today()
-# today.weekday() は月曜日が0、日曜日が6なので、今日の日付から曜日の日数分だけ引くと月曜日の日付がわかる
-monday = today - datetime.timedelta(days=today.weekday())
-year = monday.year
-month = f"{monday.month:02d}" # 5月なら "05" のようにゼロ埋め
-day = f"{monday.day:02d}"
 
-folderdate = monday - datetime.timedelta(days=7)
-folderyear = str(folderdate.year)
-foldermonth = f"{folderdate.month:02d}"
-
-
-pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folderyear}/{foldermonth}/kondate-{year}{month}{day}.pdf"
 
 def main(request):
     """
@@ -34,18 +22,19 @@ def main(request):
     line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
     today = datetime.date.today()
     
-    try:
-        # 1. 今日の献立表PDFのURLを取得
-        response = requests.get(pdf_url, timeout=5)
-        if response.status_code == 200:
-            pass
-        else:
-            month1 = int(month1)
-            month1 -= 1
-            month1 = f"{month1:02d}"
-            #print(f"型: {type(month)}")
-            pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month1}/kondate-{year}{month2}{day}.pdf"
+    # today.weekday() は月曜日が0、日曜日が6なので、今日の日付から曜日の日数分だけ引くと月曜日の日付がわかる
+    monday = today - datetime.timedelta(days=today.weekday())
+    year = monday.year
+    month = f"{monday.month:02d}" # 5月なら "05" のようにゼロ埋め
+    day = f"{monday.day:02d}"
 
+    folderdate = monday - datetime.timedelta(days=7)
+    folderyear = str(folderdate.year)
+    foldermonth = f"{folderdate.month:02d}"
+
+    pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folderyear}/{foldermonth}/kondate-{year}{month}{day}.pdf"
+    
+    try:
         # 2. URLからPDFファイルをダウンロード
         response = requests.get(pdf_url)
         # もしPDFが見つからなかった場合(404エラーなど)は、エラーメッセージを出す
