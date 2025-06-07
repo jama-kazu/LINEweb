@@ -3,6 +3,7 @@ import datetime
 import requests
 import io
 import pdfplumber
+import webbrowser
 from linebot import LineBotApi
 from linebot.models import TextSendMessage
 import os # ← osをインポートするのを忘れないように
@@ -12,23 +13,40 @@ import os # ← osをインポートするのを忘れないように
 CHANNEL_ACCESS_TOKEN = os.getenv('CHANNEL_ACCESS_TOKEN')
 USER_ID = os.getenv('USER_ID')
 
+today = datetime.date.today()
+# today.weekday() は月曜日が0、日曜日が6なので、今日の日付から曜日の日数分だけ引くと月曜日の日付がわかる
+monday = today - datetime.timedelta(days=today.weekday())
+year = monday.year
+month = f"{monday.month:02d}" # 5月なら "05" のようにゼロ埋め
+day = f"{monday.day:02d}"
+
 def get_menu_pdf_url_for_today():
     """
     今日の日付が含まれる週の、献立表PDFのURLを生成する関数。
     献立表のURLが「その週の月曜日の日付」で生成されていると仮定する。
     """
-    today = datetime.date.today()
-    # today.weekday() は月曜日が0、日曜日が6なので、今日の日付から曜日の日数分だけ引くと月曜日の日付がわかる
-    monday = today - datetime.timedelta(days=today.weekday())
     
     # URLの形式に沿って組み立てる
     # 例: https://www.numazu-ct.ac.jp/wp-content/uploads/2025/05/kondate-20250519.pdf
-    year = monday.year
-    month = f"{monday.month:02d}" # 5月なら "05" のようにゼロ埋め
-    day = f"{monday.day:02d}"
-
     url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month}/kondate-{year}{month}{day}.pdf"
     return url
+
+def check_url():
+    try:
+        response = requests.get(pdf_url, timeout=5)
+        
+        if response.status_code == 200:
+            return pdf_url
+        
+        else:
+            pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year}/{month-1}/kondate-{year}{month}{day}.pdf"
+            return pdf_url
+        
+    except requests.exceptions.RequestException as e:
+        # タイムアウト、DNS解決エラー、接続エラーなど、リクエスト自体の例外をキャッチ
+        print(f"チェック中にエラーが発生しました（URLが不正、またはネットワーク接続の問題など）。")
+        # print(f"エラー詳細: {e}") # 詳細なエラーを見たい場合はこの行のコメントを外す
+        return False
 
 def main(request):
     """
@@ -40,6 +58,7 @@ def main(request):
     try:
         # 1. 今日の献立表PDFのURLを取得
         pdf_url = get_menu_pdf_url_for_today()
+        check_url(pdf_url)
 
         # 2. URLからPDFファイルをダウンロード
         response = requests.get(pdf_url)
