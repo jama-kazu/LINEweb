@@ -3,36 +3,38 @@ import datetime
 import requests
 import io
 import pdfplumber
-from linebot import LineBotApi
-from linebot.models import TextSendMessage
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo # Python 3.9以降で推奨される標準ライブラリ
+
+# LINE SDK v3のインポートに変更
+from linebot.v3.messaging import (
+    Configuration,
+    ApiClient,
+    MessagingApi,
+    PushMessageRequest,
+    TextMessage
+)
+
+# 必要なものをdatetimeから直接インポート
+from datetime import datetime, date, timedelta
+from zoneinfo import ZoneInfo
 
 # --- 設定項目 ---
-# 環境変数から安全に読み込むのが望ましい
 CHANNEL_ACCESS_TOKEN = os.getenv('CHANNEL_ACCESS_TOKEN')
 USER_ID = os.getenv('USER_ID')
 
 def generate_menu_url(target_date):
     """
     特定の日付に基づいて、その週の月曜日の日付を使った献立表PDFのURLを生成する。
-    「ファイルは前月のフォルダに格納される」というルールを適用する。
     """
-
-    # target_dateから、その週の月曜日を計算
-    monday = target_date - datetime.timedelta(days=target_date.weekday())
+    monday = target_date - timedelta(days=target_date.weekday())
     
-    # ファイル名用の年月日
     filename_year = str(monday.year)
     filename_month = f"{monday.month:02d}"
     filename_day = f"{monday.day:02d}"
     
-    # フォルダパス用の年月（前月のフォルダにあるというルールを適用）
-    date_for_folder = monday - datetime.timedelta(days=7)
+    date_for_folder = monday - timedelta(days=7)
     folder_year = str(date_for_folder.year)
     folder_month = f"{date_for_folder.month:02d}"
     
-    # URLを組み立てて返す
     return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
 
 def parse_menu_from_pdf(pdf_content, target_date):
@@ -48,18 +50,15 @@ def parse_menu_from_pdf(pdf_content, target_date):
             raise ValueError("PDFからテーブルが抽出できませんでした。")
 
         kondate_table = tables[0]
-        col_index_for_today = target_date.weekday() + 1 # 月曜=1, 火曜=2...
+        col_index_for_today = target_date.weekday() + 1
 
-        # 土日(5,6)は献立がないので、列が存在しない場合はエラーとする
-        if col_index_for_today > len(kondate_table[0]) -1:
+        if col_index_for_today > len(kondate_table[0]) - 1:
             raise ValueError("本日は献立の記載がありません（土日または祝日の可能性があります）。")
 
-        # ヘッダーの日付を簡易チェック
         header_date = kondate_table[0][col_index_for_today]
         if str(target_date.day) not in header_date:
             raise ValueError(f"テーブルのヘッダー({header_date})が今日の日付({target_date.day})と一致しません。")
         
-        # or "記載なし" は、セルが空欄だった場合の対策
         menu_asa = (kondate_table[1][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         menu_hiru = (kondate_table[2][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         menu_yoru = (kondate_table[3][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
@@ -75,48 +74,54 @@ def main(request):
     """
     メインの実行関数
     """
-    line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
-
-    today = datetime.date.today()
     message_text = ""
-    pdf_url = ""
-
+    
     jst = ZoneInfo("Asia/Tokyo")
     now_jst = datetime.now(jst)
     today = now_jst.date()
 
-    # 1. 献立表PDFを探す (今週→先週→先々週と3回試行)
     pdf_content = None
+    # 3週間前まで試行
     for i in range(3):
-        target_date = today - datetime.timedelta(weeks=i)
-        pdf_url = generate_menu_url(target_date)
+        check_date = today - timedelta(weeks=i)
+        pdf_url = generate_menu_url(check_date)
         print(f"URLを試行中: {pdf_url}")
 
         try:
             response = requests.get(pdf_url, timeout=10)
-            response.raise_for_status() # 404などのエラーがあればここで例外を発生させる
+            response.raise_for_status()
             pdf_content = response.content
-            print("→ PDFを発見！")
-            break # 成功したらループを抜ける
+            print(f"→ PDFを発見！ URL: {pdf_url}")
+            break
         except requests.exceptions.HTTPError:
             print("→ 見つかりません。次の週を試します。")
-            continue # 見つからなければ次のループへ
+            continue
     
-    # 2. PDFが見つかったかどうかで処理を分岐
     if pdf_content:
         try:
-            # PDFから今日の献立を解析
             message_text = parse_menu_from_pdf(pdf_content, today)
         except ValueError as e:
-            # PDFの解析に失敗した場合 (祝日など)
             message_text = f"【お知らせ】\n献立表PDFはありましたが、本日の献立を解析できませんでした。\n理由: {e}"
     else:
-        # 3週間探してもPDFが見つからなかった場合
-        message_text = f"【お知らせ】\n直近の献立表PDFが見つかりませんでした。"
+        # 3週間探しても見つからなかった場合、最後に試行したURLをメッセージに含める
+        message_text = f"【お知らせ】\n直近の献立表PDFが見つかりませんでした。\n最後に試したURL: {pdf_url}"
 
-    # 3. 最終的なメッセージをLINEに送信
+    # --- LINE送信処理 (v3の書き方に変更) ---
+    if not CHANNEL_ACCESS_TOKEN or not USER_ID:
+        print("環境変数 CHANNEL_ACCESS_TOKEN または USER_ID が設定されていません。")
+        print(f"送信予定だったメッセージ:\n{message_text}")
+        return 'Success (skipped LINE push)', 200
+
+    configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
     try:
-        line_bot_api.push_message(USER_ID, TextSendMessage(text=message_text))
+        with ApiClient(configuration) as api_client:
+            line_bot_api = MessagingApi(api_client)
+            line_bot_api.push_message(
+                PushMessageRequest(
+                    to=USER_ID,
+                    messages=[TextMessage(text=message_text)]
+                )
+            )
         print("LINEメッセージを送信しました。")
     except Exception as e:
         print(f"LINE送信中にエラーが発生しました: {e}")
