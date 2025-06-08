@@ -1,10 +1,11 @@
 import os
-import datetime
-import requests
 import io
+from datetime import datetime, date, timedelta
+from zoneinfo import ZoneInfo
+
+import requests
 import pdfplumber
 
-# LINE SDK v3のインポートに変更
 from linebot.v3.messaging import (
     Configuration,
     ApiClient,
@@ -12,10 +13,6 @@ from linebot.v3.messaging import (
     PushMessageRequest,
     TextMessage
 )
-
-# 必要なものをdatetimeから直接インポート
-from datetime import datetime, date, timedelta
-from zoneinfo import ZoneInfo
 
 # --- 設定項目 ---
 CHANNEL_ACCESS_TOKEN = os.getenv('CHANNEL_ACCESS_TOKEN')
@@ -50,15 +47,32 @@ def parse_menu_from_pdf(pdf_content, target_date):
             raise ValueError("PDFからテーブルが抽出できませんでした。")
 
         kondate_table = tables[0]
-        col_index_for_today = target_date.weekday() + 1
-
-        if col_index_for_today > len(kondate_table[0]) - 1:
-            raise ValueError("本日は献立の記載がありません（土日または祝日の可能性があります）。")
-
-        header_date = kondate_table[0][col_index_for_today]
-        if str(target_date.day) not in header_date:
-            raise ValueError(f"テーブルのヘッダー({header_date})が今日の日付({target_date.day})と一致しません。")
         
+        # --- ★★★ ここからロジックを修正：列を検索する方式に変更 ★★★ ---
+        
+        # テーブルのヘッダー行を取得 (例: ['日付', '令和...（月）', '令和...（火）', ...])
+        header_row = kondate_table[0]
+        
+        # 探したい日付の「日」の部分を文字列にする (例: '8')
+        day_str_to_find = str(target_date.day)
+        
+        col_index_for_today = -1 # 見つからなかった場合の初期値として-1を設定
+
+        # ヘッダー行を1セルずつ調べて、今日の日付が含まれる列を探す
+        # enumerateを使うと、インデックス番号(i)と内容(header_text)を同時に取得できる
+        for i, header_text in enumerate(header_row):
+            # header_textがNoneの場合も考慮して、(header_text or "") とする
+            if day_str_to_find in (header_text or ""):
+                col_index_for_today = i
+                print(f"→ 日付'{day_str_to_find}'をヘッダー'{header_text}'(列番号{i})で発見。")
+                break # 見つかったらループを抜ける
+        
+        # もしループを全部回っても見つからなかった場合
+        if col_index_for_today == -1:
+            raise ValueError(f"献立表のヘッダーに今日の日付({day_str_to_find})が見つかりませんでした。")
+        
+        # --- ★★★ 修正はここまで ★★★ ---
+
         menu_asa = (kondate_table[1][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         menu_hiru = (kondate_table[2][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         menu_yoru = (kondate_table[3][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
@@ -74,6 +88,11 @@ def main(request):
     """
     メインの実行関数
     """
+    line_bot_api_client = None
+    if CHANNEL_ACCESS_TOKEN:
+        configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
+        line_bot_api_client = ApiClient(configuration)
+
     message_text = ""
     
     jst = ZoneInfo("Asia/Tokyo")
@@ -81,7 +100,7 @@ def main(request):
     today = now_jst.date()
 
     pdf_content = None
-    # 3週間前まで試行
+    pdf_url = ""
     for i in range(3):
         check_date = today - timedelta(weeks=i)
         pdf_url = generate_menu_url(check_date)
@@ -103,25 +122,17 @@ def main(request):
         except ValueError as e:
             message_text = f"【お知らせ】\n献立表PDFはありましたが、本日の献立を解析できませんでした。\n理由: {e}"
     else:
-        # 3週間探しても見つからなかった場合、最後に試行したURLをメッセージに含める
         message_text = f"【お知らせ】\n直近の献立表PDFが見つかりませんでした。\n最後に試したURL: {pdf_url}"
 
-    # --- LINE送信処理 (v3の書き方に変更) ---
-    if not CHANNEL_ACCESS_TOKEN or not USER_ID:
-        print("環境変数 CHANNEL_ACCESS_TOKEN または USER_ID が設定されていません。")
+    # --- LINE送信処理 ---
+    if not line_bot_api_client or not USER_ID:
+        print("環境変数が設定されていないため、LINE送信をスキップします。")
         print(f"送信予定だったメッセージ:\n{message_text}")
         return 'Success (skipped LINE push)', 200
 
-    configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
     try:
-        with ApiClient(configuration) as api_client:
-            line_bot_api = MessagingApi(api_client)
-            line_bot_api.push_message(
-                PushMessageRequest(
-                    to=USER_ID,
-                    messages=[TextMessage(text=message_text)]
-                )
-            )
+        line_bot_api = MessagingApi(line_bot_api_client)
+        line_bot_api.push_message(PushMessageRequest(to=USER_ID, messages=[TextMessage(text=message_text)]))
         print("LINEメッセージを送信しました。")
     except Exception as e:
         print(f"LINE送信中にエラーが発生しました: {e}")
