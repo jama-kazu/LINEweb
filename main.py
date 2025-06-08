@@ -47,6 +47,8 @@ def parse_menu_from_pdf(pdf_content, target_date):
             raise ValueError("PDFからテーブルが抽出できませんでした。")
 
         kondate_table = tables[0]
+        
+        # ★★★ ここが「検索」ロジックになっていることを確認 ★★★
         header_row = kondate_table[0]
         day_str_to_find = str(target_date.day)
         col_index_for_today = -1
@@ -54,6 +56,7 @@ def parse_menu_from_pdf(pdf_content, target_date):
         for i, header_text in enumerate(header_row):
             if day_str_to_find in (header_text or ""):
                 col_index_for_today = i
+                print(f"→ 日付'{day_str_to_find}'をヘッダー'{header_text}'(列番号{i})で発見。")
                 break
         
         if col_index_for_today == -1:
@@ -83,15 +86,10 @@ def main(request):
     jst = ZoneInfo("Asia/Tokyo")
     now_jst = datetime.now(jst)
     today = now_jst.date()
-
-    # 土日チェック（画像から土日も献立があると判明したため、このチェックは不要）
-    # if today.weekday() >= 5:
-    #     message_text = "..."
-    # else:
-    #     ...
     
     pdf_content = None
     pdf_url = ""
+    # 3週間前まで試行
     for i in range(3):
         check_date = today - timedelta(weeks=i)
         pdf_url = generate_menu_url(check_date)
