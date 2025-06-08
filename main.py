@@ -5,6 +5,8 @@ import io
 import pdfplumber
 from linebot import LineBotApi
 from linebot.models import TextSendMessage
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo # Python 3.9以降で推奨される標準ライブラリ
 
 # --- 設定項目 ---
 # 環境変数から安全に読み込むのが望ましい
@@ -16,6 +18,11 @@ def generate_menu_url(target_date):
     特定の日付に基づいて、その週の月曜日の日付を使った献立表PDFのURLを生成する。
     「ファイルは前月のフォルダに格納される」というルールを適用する。
     """
+
+    jst = ZoneInfo("Asia/Tokyo")
+    now_jst = detetime.now(jst)
+    today = now_jst.data()
+
     # target_dateから、その週の月曜日を計算
     monday = target_date - datetime.timedelta(days=target_date.weekday())
     
@@ -76,6 +83,10 @@ def main(request):
     today = datetime.date.today()
     message_text = ""
     pdf_url = ""
+
+    jst = ZoneInfo("Asia/Tokyo")
+    now_jst = detetime.now(jst)
+    today = now_jst.data()
 
     # 1. 献立表PDFを探す (今週→先週→先々週と3回試行)
     pdf_content = None
