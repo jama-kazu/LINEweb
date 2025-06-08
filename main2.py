@@ -115,13 +115,13 @@ def main(request):
                     f"【お昼の寮食メニュー  ({today.strftime('%-m/%-d')})】\n\n"
                     f"■ 昼食\n{menu_hiru}"
                 )
-            elif now_jst.hour == 22:
+            elif now_jst.hour == 18 and now_jst.min == 0:
                 message_text = (
                     f"【夜ご飯の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
                     f"■ 夕食\n{menu_yoru}"
                 )
             else:
-                pass
+                message_text = f"\n【多分今これelseに飛んでなんも表示できないわ☆\n理由:{e}】"
         except ValueError as e:
             message_text = f"【お知らせ】\n献立表PDFはありましたが、本日の献立を解析できませんでした。\n理由: {e}"
     else:
