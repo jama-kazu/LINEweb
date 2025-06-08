@@ -1,4 +1,3 @@
-print("★★★ これはバージョン20250608-2000版のコードです ★★★")
 import os
 import io
 from datetime import datetime, date, timedelta
@@ -48,31 +47,17 @@ def parse_menu_from_pdf(pdf_content, target_date):
             raise ValueError("PDFからテーブルが抽出できませんでした。")
 
         kondate_table = tables[0]
-        
-        # --- ★★★ ここからロジックを修正：列を検索する方式に変更 ★★★ ---
-        
-        # テーブルのヘッダー行を取得 (例: ['日付', '令和...（月）', '令和...（火）', ...])
         header_row = kondate_table[0]
-        
-        # 探したい日付の「日」の部分を文字列にする (例: '8')
         day_str_to_find = str(target_date.day)
-        
-        col_index_for_today = -1 # 見つからなかった場合の初期値として-1を設定
+        col_index_for_today = -1
 
-        # ヘッダー行を1セルずつ調べて、今日の日付が含まれる列を探す
-        # enumerateを使うと、インデックス番号(i)と内容(header_text)を同時に取得できる
         for i, header_text in enumerate(header_row):
-            # header_textがNoneの場合も考慮して、(header_text or "") とする
             if day_str_to_find in (header_text or ""):
                 col_index_for_today = i
-                print(f"→ 日付'{day_str_to_find}'をヘッダー'{header_text}'(列番号{i})で発見。")
-                break # 見つかったらループを抜ける
+                break
         
-        # もしループを全部回っても見つからなかった場合
         if col_index_for_today == -1:
             raise ValueError(f"献立表のヘッダーに今日の日付({day_str_to_find})が見つかりませんでした。")
-        
-        # --- ★★★ 修正はここまで ★★★ ---
 
         menu_asa = (kondate_table[1][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         menu_hiru = (kondate_table[2][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
@@ -95,11 +80,16 @@ def main(request):
         line_bot_api_client = ApiClient(configuration)
 
     message_text = ""
-    
     jst = ZoneInfo("Asia/Tokyo")
     now_jst = datetime.now(jst)
     today = now_jst.date()
 
+    # 土日チェック（画像から土日も献立があると判明したため、このチェックは不要）
+    # if today.weekday() >= 5:
+    #     message_text = "..."
+    # else:
+    #     ...
+    
     pdf_content = None
     pdf_url = ""
     for i in range(3):
@@ -125,7 +115,6 @@ def main(request):
     else:
         message_text = f"【お知らせ】\n直近の献立表PDFが見つかりませんでした。\n最後に試したURL: {pdf_url}"
 
-    # --- LINE送信処理 ---
     if not line_bot_api_client or not USER_ID:
         print("環境変数が設定されていないため、LINE送信をスキップします。")
         print(f"送信予定だったメッセージ:\n{message_text}")
@@ -140,6 +129,5 @@ def main(request):
 
     return 'Success', 200
 
-# --- ローカルでのテスト用 ---
 if __name__ == '__main__':
     main(None)
