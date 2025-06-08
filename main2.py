@@ -122,7 +122,7 @@ def main(request):
                     f"■ 夕食\n{menu_yoru}"
                 )
             else:
-                message_text = f"\n【多分今これ時間外だからelseに飛んでなんも表示できないわ☆\n"
+                message_text = f"error: [多分今これ時間外だからelseに飛んでなんも表示できないわ☆]\n"
         except ValueError as e:
             message_text = f"【お知らせ】\n献立表PDFはありましたが、本日の献立を解析できませんでした。\n理由: {e}"
     else:
