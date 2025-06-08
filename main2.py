@@ -142,7 +142,7 @@ def main(request):
     return 'Success', 200
 
 if __name__ == '__main__':
-    main(None)90-^\
+    main(None)
 import os
 import io
 from datetime import datetime, date, timedelta
