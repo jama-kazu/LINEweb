@@ -76,6 +76,7 @@ def main(request):
     メインの実行関数
     """
     line_bot_api = LineBotApi(CHANNEL_ACCESS_TOKEN)
+
     today = datetime.date.today()
     message_text = ""
     pdf_url = ""
