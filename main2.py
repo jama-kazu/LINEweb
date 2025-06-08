@@ -1,3 +1,4 @@
+#これは朝7:00に朝昼晩のメニュー、昼12:00に昼食のメニュー、夕18:00に夕食のメニューをLINEで自動送信してくれるプログラムであ～る
 import os
 import io
 from datetime import datetime, date, timedelta
