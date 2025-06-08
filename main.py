@@ -19,10 +19,6 @@ def generate_menu_url(target_date):
     「ファイルは前月のフォルダに格納される」というルールを適用する。
     """
 
-    jst = ZoneInfo("Asia/Tokyo")
-    now_jst = detetime.now(jst)
-    today = now_jst.data()
-
     # target_dateから、その週の月曜日を計算
     monday = target_date - datetime.timedelta(days=target_date.weekday())
     
@@ -85,8 +81,8 @@ def main(request):
     pdf_url = ""
 
     jst = ZoneInfo("Asia/Tokyo")
-    now_jst = detetime.now(jst)
-    today = now_jst.data()
+    now_jst = datetime.now(jst)
+    today = now_jst.date()
 
     # 1. 献立表PDFを探す (今週→先週→先々週と3回試行)
     pdf_content = None
