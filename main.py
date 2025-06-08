@@ -23,15 +23,15 @@ def generate_menu_url(target_date):
     特定の日付に基づいて、その週の月曜日の日付を使った献立表PDFのURLを生成する。
     """
     monday = target_date - timedelta(days=target_date.weekday())
-
+    
     filename_year = str(monday.year)
     filename_month = f"{monday.month:02d}"
     filename_day = f"{monday.day:02d}"
-
+    
     date_for_folder = monday - timedelta(days=7)
     folder_year = str(date_for_folder.year)
     folder_month = f"{date_for_folder.month:02d}"
-
+    
     return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
 
 def parse_menu_from_pdf(pdf_content, target_date):
@@ -47,8 +47,8 @@ def parse_menu_from_pdf(pdf_content, target_date):
             raise ValueError("PDFからテーブルが抽出できませんでした。")
 
         kondate_table = tables[0]
-
-        # ヘッダー行を「検索」して正しい列を見つけるロジック
+        
+        # ★★★ ここが「検索」ロジックになっていることを確認 ★★★
         header_row = kondate_table[0]
         day_str_to_find = str(target_date.day)
         col_index_for_today = -1
@@ -58,13 +58,13 @@ def parse_menu_from_pdf(pdf_content, target_date):
                 col_index_for_today = i
                 print(f"→ 日付'{day_str_to_find}'をヘッダー'{header_text}'(列番号{i})で発見。")
                 break
-
+        
         if col_index_for_today == -1:
             raise ValueError(f"献立表のヘッダーに今日の日付({day_str_to_find})が見つかりませんでした。")
 
         menu_asa = (kondate_table[1][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
-        menu_hiru = (kondate_table[2][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
-        menu_yoru = (kondate_table[3][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
+        menu_hiru = (kondate_table[8][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
+        menu_yoru = (kondate_table[15][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
 
         return (
             f"【本日の寮食メニュー ({target_date.strftime('%-m/%-d')})】\n\n"
@@ -86,7 +86,7 @@ def main(request):
     jst = ZoneInfo("Asia/Tokyo")
     now_jst = datetime.now(jst)
     today = now_jst.date()
-
+    
     pdf_content = None
     pdf_url = ""
     # 3週間前まで試行
@@ -104,7 +104,7 @@ def main(request):
         except requests.exceptions.HTTPError:
             print("→ 見つかりません。次の週を試します。")
             continue
-
+    
     if pdf_content:
         try:
             message_text = parse_menu_from_pdf(pdf_content, today)
