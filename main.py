@@ -1,3 +1,4 @@
+print("★★★ これはバージョン20250608-2000版のコードです ★★★")
 import os
 import io
 from datetime import datetime, date, timedelta
