@@ -33,4 +33,4 @@ jobs:
           # 手順2で設定したGitHub Secretsを環境変数としてスクリプトに渡す
           CHANNEL_ACCESS_TOKEN: ${{ secrets.CHANNEL_ACCESS_TOKEN }}
           USER_ID: ${{ secrets.USER_ID }}
-        run: python main.py
+        run: python main2.py
