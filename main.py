@@ -64,7 +64,7 @@ def parse_menu_from_pdf(pdf_content, target_date):
 
         menu_asa = (kondate_table[1][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         menu_hiru = (kondate_table[8][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
-        menu_yoru = (kondate_table[15][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
+        menu_yoru = (kondate_table[14][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
 
         return (
             f"【本日の寮食メニュー ({target_date.strftime('%-m/%-d')})】\n\n"
