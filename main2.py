@@ -117,8 +117,8 @@ def main(request):
                 )
             elif now_jst.hour == 18 and now_jst.min == 0:
                 message_text = (
-                    f"【夜ご飯の寮食メニュー ({today.strftime("%-m/%-d")})】\n\n"
-                    f"■ 昼食\n{menu_yoru}"
+                    f"【夜ご飯の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
+                    f"■ 夕食\n{menu_yoru}"
                 )
             else:
                 pass
