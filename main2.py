@@ -112,7 +112,7 @@ def main(request):
                 )
             elif now_jst.hour == 12 and now_jst.min == 0:
                 message_text = (
-                    f"【お昼の寮食メニュー  ({today.strftime("%-m/%-d")}】\n\n"
+                    f"【お昼の寮食メニュー  ({today.strftime("%-m/%-d")})】\n\n"
                     f"■ 昼食\n{menu_hiru}"
                 )
             elif now_jst.hour == 18 and now_jst.min == 0:
