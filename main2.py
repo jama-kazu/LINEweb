@@ -86,27 +86,23 @@ def main(request):
     pdf_content = None
     pdf_url = ""
     # 3週間前まで試行
-    for i in range(3):
-        #check_date = today - timedelta(weeks=i)
+    
+    check_date = today - timedelta(weeks=i)        
 
+    pdf_url = generate_menu_url(check_date)
+    print(f"URLを試行中: {pdf_url}")
 
-        filename = int(filename)
-        filename -= 1
-        #monthを１引く、エラーがなんだったか忘れたら作成されたURL見て！！
-
-
+    try:
+        response = requests.get(pdf_url, timeout=10)
+        response.raise_for_status()
+        pdf_content = response.content
+        print(f"→ PDFを発見！ URL: {pdf_url}")
+        break
+    except requests.exceptions.HTTPError:
+        print("→ folder_monthをひとつ下げます。")
+        folder_month = int(folder_month)
+        folder_month -= 1
         pdf_url = generate_menu_url(check_date)
-        print(f"URLを試行中: {pdf_url}")
-
-        try:
-            response = requests.get(pdf_url, timeout=10)
-            response.raise_for_status()
-            pdf_content = response.content
-            print(f"→ PDFを発見！ URL: {pdf_url}")
-            break
-        except requests.exceptions.HTTPError:
-            print("→ 見つかりません。次の週を試します。")
-            continue
     
     if pdf_content:
         try:
