@@ -46,6 +46,9 @@ def generate_and_test_menu_url(target_date):
         folder_month -= 1
         folder_month = f"{folder_month:02d}"
         pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
+        response = requests.get(pdf_url, timeout=10)
+        response.raise_for_status()
+        pdf_content = response.content
         print(f"{pdf_url}")
 
     return pdf_url, pdf_content
@@ -104,6 +107,7 @@ def main(request):
     for i in range(3):
         target_date = today - timedelta(weeks=i)
         pdf_url, pdf_content = generate_and_test_menu_url(target_date)
+        
         print(f"URLを試行中: {pdf_url}")
     
     if pdf_content:
