@@ -34,18 +34,19 @@ def generate_and_test_menu_url(target_date):
     folder_month = f"{date_for_folder.month:02d}"
 
     pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
-
-    response = requests.get(pdf_url, timeout=10)
-    response.raise_for_status()
-    pdf_content = response.content
-    if pdf_content:
-        print(f"→ PDFを発見！ URL: {pdf_url}")    
-    else:
-        print("→ 見つかりません。folder_monthを１つ下げます。")
+ 
+    try:
+        response = requests.get(pdf_url, timeout=10)
+        response.raise_for_status()
+        pdf_content = response.content
+        print("URLを発見\n{pdf_url}")
+        break
+    except requests.exceptions.HTTPError:
+        print("見つからなかったため folder_month を1下げる")
         folder_month = int(folder_month)
         folder_month -= 1
-        folder_month = str(folder_month)
-        pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"    
+        folder_month = f"{folder_month:02d}"
+        pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
     
     return pdf_url, pdf_content
 
