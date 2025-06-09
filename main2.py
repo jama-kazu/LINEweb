@@ -47,7 +47,7 @@ def generate_and_test_menu_url(target_date):
         folder_month = str(folder_month)
         pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"    
     
-    return pdf_url
+    return pdf_url, pdf_content
 
 def parse_menu_from_pdf(pdf_content, target_date):
     """
@@ -102,18 +102,8 @@ def main(request):
     # 3週間前まで試行
     for i in range(3):
         target_date = today - timedelta(weeks=i)
-        pdf_url = generate_and_test_menu_url(target_date)
+        pdf_url, pdf_content = generate_and_test_menu_url(target_date)
         print(f"URLを試行中: {pdf_url}")
-
-        try:
-            response = requests.get(pdf_url, timeout=10)
-            response.raise_for_status()
-            pdf_content = response.content
-            print(f"→ PDFを発見！ URL: {pdf_url}")
-            break
-        except requests.exceptions.HTTPError:
-            print("→ 見つかりません。次の週を試します。")
-            continue
     
     if pdf_content:
         try:
