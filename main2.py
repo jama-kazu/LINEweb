@@ -19,7 +19,7 @@ from linebot.v3.messaging import (
 CHANNEL_ACCESS_TOKEN = os.getenv('CHANNEL_ACCESS_TOKEN')
 USER_ID = os.getenv('USER_ID')
 
-def generate_menu_url(target_date):
+def generate_and_test_menu_url(target_date):
     """
     特定の日付に基づいて、その週の月曜日の日付を使った献立表PDFのURLを生成する。
     """
@@ -32,8 +32,21 @@ def generate_menu_url(target_date):
     date_for_folder = monday - timedelta(days=7)
     folder_year = str(date_for_folder.year)
     folder_month = f"{date_for_folder.month:02d}"
+
+    pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
+
+    response = requests.get(pdf_url, timeout=10)
+    response.raise_for_status()
+    pdf_content = response.content
+    if pdf_content:
+        print(f"→ PDFを発見！ URL: {pdf_url}")    
+    else:
+        print("→ 見つかりません。folder_monthを１つ下げます。")
+        int(folder_month) -= 1
+        folder_month = int(folder_month)
+        pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"    
     
-    return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
+    return pdf_url
 
 def parse_menu_from_pdf(pdf_content, target_date):
     """
@@ -86,23 +99,21 @@ def main(request):
     pdf_content = None
     pdf_url = ""
     # 3週間前まで試行
-    
-    check_date = today - timedelta(weeks=i)        
-
-    pdf_url = generate_menu_url(check_date)
-    print(f"URLを試行中: {pdf_url}")
-
-    try:
-        response = requests.get(pdf_url, timeout=10)
-        response.raise_for_status()
-        pdf_content = response.content
-        print(f"→ PDFを発見！ URL: {pdf_url}")
-        break
-    except requests.exceptions.HTTPError:
-        print("→ folder_monthをひとつ下げます。")
-        folder_month = int(folder_month)
-        folder_month -= 1
+    for i in range(3):
+        check_date = today - timedelta(weeks=i) 
+        
         pdf_url = generate_menu_url(check_date)
+        print(f"URLを試行中: {pdf_url}")
+
+        try:
+            response = requests.get(pdf_url, timeout=10)
+            response.raise_for_status()
+            pdf_content = response.content
+            print(f"→ PDFを発見！ URL: {pdf_url}")
+            break
+        except requests.exceptions.HTTPError:
+            print("→ 見つかりません。次の週を試します。")
+            continue
     
     if pdf_content:
         try:
