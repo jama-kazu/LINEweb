@@ -87,7 +87,14 @@ def main(request):
     pdf_url = ""
     # 3週間前まで試行
     for i in range(3):
-        check_date = today - timedelta(weeks=i)
+        #check_date = today - timedelta(weeks=i)
+
+
+        filename = int(filename)
+        filename -= 1
+        #monthを１引く、エラーがなんだったか忘れたら作成されたURL見て！！
+
+
         pdf_url = generate_menu_url(check_date)
         print(f"URLを試行中: {pdf_url}")
 
