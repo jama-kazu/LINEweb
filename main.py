@@ -127,7 +127,12 @@ def main(request):
                     f"■ 夕食\n{menu_yoru}"
                 )
             else:
-                pass
+                message_text = (
+                    f"【これはTEST送信である ({today})】\n\n"
+                    f"■ 朝食\n{menu_asa}\n\n"
+                    f"■ 昼食\n{menu_hiru}\n\n"
+                    f"■ 夕食\n{menu_yoru}"                    
+                )
             
         except ValueError as e:
             message_text = (
