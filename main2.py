@@ -41,6 +41,7 @@ def generate_and_test_menu_url(target_date):
         response.raise_for_status()
         pdf_content = response.content
         print("URLを発見\n{pdf_url}")
+        
     except requests.exceptions.HTTPError:
         print("見つからなかったため folder_month を1下げる")
         folder_month = int(folder_month)
@@ -84,7 +85,7 @@ def parse_menu_from_pdf(pdf_content, target_date):
 
         menu_asa = (kondate_table[1][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         menu_hiru = (kondate_table[8][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
-        menu_yoru = (kondate_table[16][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
+        menu_yoru = (kondate_table[15][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
 
     return menu_asa, menu_hiru, menu_yoru
 
