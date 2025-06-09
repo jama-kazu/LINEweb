@@ -33,8 +33,8 @@ def generate_menu_url(target_date):
     # 献立表が前月のフォルダにある場合を考慮、フォルダーの"月"だけは2週間前
     date_for_folder = monday - timedelta(days=7)
     folder_year = str(date_for_folder.year)
-    month_for_folder = monday - timedelta(weeks=2)
-    folder_month = f"{month_for_folder.month:02d}"
+    date_for_folder = monday - timedelta(weeks=2)
+    folder_month = f"{date_for_folder.month:02d}"
     
     return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
 
