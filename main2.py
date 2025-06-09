@@ -41,7 +41,6 @@ def generate_and_test_menu_url(target_date):
         response.raise_for_status()
         pdf_content = response.content
         print("URLを発見\n{pdf_url}")
-        break
     except requests.exceptions.HTTPError:
         print("見つからなかったため folder_month を1下げる")
         folder_month = int(folder_month)
