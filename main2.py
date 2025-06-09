@@ -103,7 +103,7 @@ def main(request):
     for i in range(3):
         check_date = today - timedelta(weeks=i) 
         
-        pdf_url = generate_menu_url(check_date)
+        pdf_url = generate_and_test_menu_url(check_date)
         print(f"URLを試行中: {pdf_url}")
 
         try:
