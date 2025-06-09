@@ -30,10 +30,11 @@ def generate_menu_url(target_date):
     filename_month = f"{monday.month:02d}"
     filename_day = f"{monday.day:02d}"
     
-    # 献立表が前月のフォルダにある場合を考慮
+    # 献立表が前月のフォルダにある場合を考慮、フォルダーの"月"だけは2週間前
     date_for_folder = monday - timedelta(days=7)
     folder_year = str(date_for_folder.year)
-    folder_month = f"{date_for_folder.month:02d}"
+    month_for_folder = monday - timedelta(weeks=2)
+    folder_month = f"{month_for_folder:02d}"
     
     return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
 
@@ -67,7 +68,7 @@ def parse_menu_from_pdf(pdf_content, target_date):
         menu_asa = (kondate_table[1][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         menu_hiru = (kondate_table[8][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         # 【修正】夕食の行番号を以前の[16]に戻しました。もし[15]が正しい場合は修正してください。
-        menu_yoru = (kondate_table[16][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
+        menu_yoru = (kondate_table[15][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
 
     return menu_asa, menu_hiru, menu_yoru
 
@@ -84,7 +85,6 @@ def main(request):
     jst = ZoneInfo("Asia/Tokyo")
     now_jst = datetime.now(jst)
     today = now_jst.date()
-    
     pdf_content = None
     pdf_url = ""
     
