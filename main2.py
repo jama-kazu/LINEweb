@@ -46,7 +46,8 @@ def generate_and_test_menu_url(target_date):
         folder_month -= 1
         folder_month = f"{folder_month:02d}"
         pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
-    
+        print(f"{pdf_url}")
+
     return pdf_url, pdf_content
 
 def parse_menu_from_pdf(pdf_content, target_date):
