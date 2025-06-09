@@ -42,8 +42,9 @@ def generate_and_test_menu_url(target_date):
         print(f"→ PDFを発見！ URL: {pdf_url}")    
     else:
         print("→ 見つかりません。folder_monthを１つ下げます。")
-        int(folder_month) -= 1
         folder_month = int(folder_month)
+        folder_month -= 1
+        folder_month = str(folder_month)
         pdf_url = f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"    
     
     return pdf_url
