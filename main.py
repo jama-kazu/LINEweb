@@ -34,7 +34,7 @@ def generate_menu_url(target_date):
     date_for_folder = monday - timedelta(days=7)
     folder_year = str(date_for_folder.year)
     month_for_folder = monday - timedelta(weeks=2)
-    folder_month = f"{month_for_folder:02d}"
+    folder_month = f"{month_for_folder.month:02d}"
     
     return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
 
