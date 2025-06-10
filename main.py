@@ -109,19 +109,19 @@ def main(request):
             menu_asa, menu_hiru, menu_yoru = parse_menu_from_pdf(pdf_content, today)
             
             # 【修正】.min -> .minute, 括弧の修正
-            if now_jst.hour == 7 and now_jst.minute == 0:
+            if now_jst.hour == 6 or now_jst.hour == 7:
                 message_text = (
                     f"【本日の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
                     f"■ 朝食\n{menu_asa}\n\n"
                     f"■ 昼食\n{menu_hiru}\n\n"
                     f"■ 夕食\n{menu_yoru}"
                 )
-            elif now_jst.hour == 12 and now_jst.minute == 0:
+            elif now_jst.hour == 11 or now_jst.hour == 12:
                 message_text = (
                     f"【お昼の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
                     f"■ 昼食\n{menu_hiru}"
                 )
-            elif now_jst.hour == 18 and now_jst.minute == 0:
+            elif now_jst.hour == 17 or now_jst.hour == 18:
                 message_text = (
                     f"【夜ご飯の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
                     f"■ 夕食\n{menu_yoru}"
