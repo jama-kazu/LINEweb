@@ -128,7 +128,8 @@ def main(request):
                 )
             else:
                 message_text = (
-                    f"【これはTEST送信である ({today})】\n\n"
+                    f"【これはTEST送信である ({today})】\n"
+                    f"{now_jst}\n\n"
                     f"■ 朝食\n{menu_asa}\n\n"
                     f"■ 昼食\n{menu_hiru}\n\n"
                     f"■ 夕食\n{menu_yoru}"                    
