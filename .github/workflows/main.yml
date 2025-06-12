@@ -3,7 +3,9 @@ name: Send LINE Menu Bot
 on:
   schedule:
     # 日本時間(JST)の毎朝7時に実行するため、UTCで前日の22時に設定
-    - cron: '45 21,2,8 * * *'
+    - cron: '50 21 * * *' #JST 6:50ぐらい
+    - cron: '00 2 * * *' #JST 11:55ぐらい
+    - cron: '40 8 * * *' #JST 17:50ぐらい
   # 手動でも実行できるようにするおまじない
   workflow_dispatch:
 
