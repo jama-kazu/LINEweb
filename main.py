@@ -108,7 +108,6 @@ def main(request):
         try:
             menu_asa, menu_hiru, menu_yoru = parse_menu_from_pdf(pdf_content, today)
             
-            # 【修正】.min -> .minute, 括弧の修正
             if now_jst.hour == 6 or now_jst.hour == 7:
                 message_text = (
                     f"【本日の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
