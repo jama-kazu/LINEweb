@@ -120,7 +120,7 @@ def main(request):
                     f"【お昼の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
                     f"■ 昼食\n{menu_hiru}"
                 )
-            elif now_jst.hour == 17 or now_jst.hour == 18:
+            elif now_jst.hour == 16 or now_jst.hour == 17:
                 message_text = (
                     f"【夜ご飯の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
                     f"■ 夕食\n{menu_yoru}"
