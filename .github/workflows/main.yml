@@ -4,7 +4,7 @@ on:
   schedule:
     # 日本時間(JST) = 協定世界時(UTC) + 9 hour
     - cron: '50 21 * * *' #JST 06:50ぐらい
-    - cron: '20 2 * * *'  #JST 11:20ぐらい
+    - cron: '50 1 * * *'  #JST 11:20ぐらい
     - cron: '45 7 * * *'  #JST 16:45ぐらい
   # 手動でも実行できるようにするおまじない
   workflow_dispatch:
