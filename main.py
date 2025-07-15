@@ -37,7 +37,7 @@ def generate_menu_url(target_date):
     base_date_for_folder = monday - timedelta(days=7)
     
     # もし基準日の「日」が14日以下なら、月に1ヶ月を足す
-    if base_date_for_folder.day <= 14:
+    if base_date_for_folder.day <= 22:
         # relativedeltaを使い、年またぎも安全に計算
         final_date_for_folder = base_date_for_folder + relativedelta(months=1)
     else:
