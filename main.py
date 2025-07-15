@@ -1,5 +1,25 @@
-# dateutilライブラリからrelativedeltaをインポート
+#これは指定時刻に寮食メニューをLINEで自動送信してくれるプログラム
+import os
+import io
+from datetime import datetime, date, timedelta
+from zoneinfo import ZoneInfo
+# --- 追加ライブラリ ---
 from dateutil.relativedelta import relativedelta
+
+import requests
+import pdfplumber
+
+from linebot.v3.messaging import (
+    Configuration,
+    ApiClient,
+    MessagingApi,
+    PushMessageRequest,
+    TextMessage
+)
+
+# --- 設定項目 ---
+CHANNEL_ACCESS_TOKEN = os.getenv('CHANNEL_ACCESS_TOKEN')
+USER_ID = os.getenv('USER_ID')
 
 def generate_menu_url(target_date):
     """
@@ -7,25 +27,16 @@ def generate_menu_url(target_date):
     """
     monday = target_date - timedelta(days=target_date.weekday())
     
+    # ファイル名は、該当日付の週の月曜日を基準に生成
     filename_year = str(monday.year)
     filename_month = f"{monday.month:02d}"
     filename_day = f"{monday.day:02d}"
     
-    # --- ▼▼▼ ここからが修正箇所 ▼▼▼ ---
+    # --- ▼▼▼ ご要望のロジックを反映 ▼▼▼ ---
+    # フォルダの年月を決めるための基準日を計算
+    base_date_for_folder = monday - timedelta(days=7)
     
-    #基準となる日付を計算
-    date_for_folder = monday - timedelta(days=7) 
-    
-    # 条件判定：基準日の「日」が14日以下か？
-    if date_for_folder.day <= 14:
-        # 条件が真の場合、基準日に1ヶ月を足す
-        # relativedeltaが年またぎを自動で処理してくれる
-        date_for_folder = date_for_folder + relativedelta(months=1)
-
-    # 最終的に決まった日付からフォルダの年月を生成
-    folder_year = str(date_for_folder.year)
-    folder_month = f"{date_for_folder.month:02d}"
-    
-    # --- ▲▲▲ ここまで修正 ▲▲▲ ---
-    
-    return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
+    # もし基準日の「日」が14日以下なら、月に1ヶ月を足す
+    if base_date_for_folder.day <= 14:
+        # relativedeltaを使い、年またぎも安全に計算
+        final_date
