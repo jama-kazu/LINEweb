@@ -3,8 +3,6 @@ import os
 import io
 from datetime import datetime, date, timedelta
 from zoneinfo import ZoneInfo
-# --- 追加ライブラリ ---
-from dateutil.relativedelta import relativedelta
 
 import requests
 import pdfplumber
@@ -27,28 +25,12 @@ def generate_menu_url(target_date):
     """
     monday = target_date - timedelta(days=target_date.weekday())
     
-    # ファイル名は、該当日付の週の月曜日を基準に生成
-    filename_year = str(monday.year)
-    filename_month = f"{monday.month:02d}"
-    filename_day = f"{monday.day:02d}"
+    # ファイル名とフォルダの年月を、すべて週の月曜日(monday)に統一する
+    year_str = str(monday.year)
+    month_str = f"{monday.month:02d}"
+    day_str = f"{monday.day:02d}"
     
-    # --- ▼▼▼ ご要望のロジックを反映 ▼▼▼ ---
-    # フォルダの年月を決めるための基準日を計算
-    base_date_for_folder = monday - timedelta(days=7)
-    
-    # もし基準日の「日」が14日以下なら、月に1ヶ月を足す
-    if base_date_for_folder.day <= 22:
-        # relativedeltaを使い、年またぎも安全に計算
-        final_date_for_folder = base_date_for_folder + relativedelta(months=1)
-    else:
-        final_date_for_folder = base_date_for_folder
-
-    # 最終的に決まった日付からフォルダの年月を生成
-    folder_year = str(final_date_for_folder.year)
-    folder_month = f"{final_date_for_folder.month:02d}"
-    # --- ▲▲▲ ここまで修正 ▲▲▲ ---
-    
-    return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{folder_year}/{folder_month}/kondate-{filename_year}{filename_month}{filename_day}.pdf"
+    return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year_str}/{month_str}/kondate-{year_str}{month_str}{day_str}.pdf"
 
 def parse_menu_from_pdf(pdf_content, target_date):
     """
@@ -99,7 +81,7 @@ def main(request):
     pdf_content = None
     pdf_url = ""
     
-    # 過去3週間まで遡ってPDFを探す安定したロジック
+    # 過去3週間まで遡ってPDFを探す
     for i in range(3):
         check_date = today - timedelta(weeks=i)
         pdf_url = generate_menu_url(check_date)
