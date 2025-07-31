@@ -1,0 +1,7 @@
+# requirements.txt
+Flask==3.0.3
+line-bot-sdk==3.9.0
+requests==2.32.3
+pdfplumber==0.11.1
+zoneinfo==0.2.1
+gunicorn==22.0.0
