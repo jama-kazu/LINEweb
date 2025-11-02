@@ -33,35 +33,36 @@ def generate_menu_url(target_date):
     return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year_str}/{month_str}/kondate-{year_str}{month_str}{day_str}.pdf"
 
 def parse_menu_from_pdf(pdf_content, target_date):
-    """
-    PDFのバイトデータから、特定の日付の献立を解析して文字列を返す。
-    """
+    """PDFを解析して朝・昼・夕のメニューをタプルで返す"""
     pdf_file = io.BytesIO(pdf_content)
     with pdfplumber.open(pdf_file) as pdf:
         page = pdf.pages[0]
         tables = page.extract_tables()
-
-        if not tables:
-            raise ValueError("PDFからテーブルが抽出できませんでした。")
-
+        if not tables: raise ValueError("PDFからテーブルが抽出できませんでした。")
+        
         kondate_table = tables[0]
         header_row = kondate_table[0]
         day_str_to_find = str(target_date.day)
         col_index_for_today = -1
 
+        # 検索パターンを「(数字)日」という、より厳密な形式にする
+        search_pattern = f"{day_str_to_find}日"
+
         for i, header_text in enumerate(header_row):
-            if day_str_to_find in (header_text or ""):
+            # '2日' in '...27日...' のような誤認を防ぐ
+            if search_pattern in (header_text or ""):
                 col_index_for_today = i
+                # 発見時のログは分かりやすさのため元の数字のまま表示
                 print(f"→ 日付'{day_str_to_find}'をヘッダー'{header_text}'(列番号{i})で発見。")
                 break
         
-        if col_index_for_today == -1:
-            raise ValueError(f"献立表のヘッダーに今日の日付({day_str_to_find})が見つかりませんでした。")
-
+        if col_index_for_today == -1: 
+            raise ValueError(f"献立表ヘッダーに今日の日付({day_str_to_find})が見つかりませんでした。")
+        
         menu_asa = (kondate_table[1][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         menu_hiru = (kondate_table[8][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
         menu_yoru = (kondate_table[15][col_index_for_today] or "").replace('\n', ' ') or "記載なし"
-
+    
     return menu_asa, menu_hiru, menu_yoru
 
 def main(request):
