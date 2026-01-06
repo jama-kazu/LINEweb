@@ -1,18 +1,12 @@
-#これは指定時刻に寮食メニューをLINEで自動送信してくれるプログラム
 import os
 import io
-from datetime import datetime, date, timedelta
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-
 import requests
 import pdfplumber
-
 from linebot.v3.messaging import (
-    Configuration,
-    ApiClient,
-    MessagingApi,
-    PushMessageRequest,
-    TextMessage
+    Configuration, ApiClient, MessagingApi,
+    PushMessageRequest, TextMessage
 )
 
 # --- 設定項目 ---
@@ -20,20 +14,11 @@ CHANNEL_ACCESS_TOKEN = os.getenv('CHANNEL_ACCESS_TOKEN')
 USER_ID = os.getenv('USER_ID')
 
 def generate_menu_url(target_date):
-    """
-    特定の日付に基づいて、その週の月曜日の日付を使った献立表PDFのURLを生成する。
-    """
     monday = target_date - timedelta(days=target_date.weekday())
-    
-    # ファイル名とフォルダの年月を、すべて週の月曜日(monday)に統一する
-    year_str = str(monday.year)
-    month_str = f"{monday.month:02d}"
-    day_str = f"{monday.day:02d}"
-    
+    year_str, month_str, day_str = str(monday.year), f"{monday.month:02d}", f"{monday.day:02d}"
     return f"https://www.numazu-ct.ac.jp/wp-content/uploads/{year_str}/{month_str}/kondate-{year_str}{month_str}{day_str}.pdf"
 
 def parse_menu_from_pdf(pdf_content, target_date):
-    """PDFを解析して朝・昼・夕のメニューをタプルで返す"""
     pdf_file = io.BytesIO(pdf_content)
     with pdfplumber.open(pdf_file) as pdf:
         page = pdf.pages[0]
@@ -45,14 +30,11 @@ def parse_menu_from_pdf(pdf_content, target_date):
         day_str_to_find = str(target_date.day)
         col_index_for_today = -1
 
-        # 検索パターンを「(数字)日」という、より厳密な形式にする
         search_pattern = f"{day_str_to_find}日"
 
         for i, header_text in enumerate(header_row):
-            # '2日' in '...27日...' のような誤認を防ぐ
             if search_pattern in (header_text or ""):
                 col_index_for_today = i
-                # 発見時のログは分かりやすさのため元の数字のまま表示
                 print(f"→ 日付'{day_str_to_find}'をヘッダー'{header_text}'(列番号{i})で発見。")
                 break
         
@@ -65,93 +47,83 @@ def parse_menu_from_pdf(pdf_content, target_date):
     
     return menu_asa, menu_hiru, menu_yoru
 
-def main(request):
-    """
-    メインの実行関数
-    """
-    line_bot_api_client = None
-    if CHANNEL_ACCESS_TOKEN:
-        configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
-        line_bot_api_client = ApiClient(configuration)
+def main():
+    if not CHANNEL_ACCESS_TOKEN or not USER_ID:
+        print("環境変数 CHANNEL_ACCESS_TOKEN または USER_ID が設定されていません。")
+        return
 
-    message_text = ""
     jst = ZoneInfo("Asia/Tokyo")
     now_jst = datetime.now(jst)
     today = now_jst.date()
     
-    pdf_content = None
-    pdf_url = ""
-    
-    # 過去3週間まで遡ってPDFを探す
-    for i in range(3):
-        check_date = today - timedelta(weeks=i)
-        pdf_url = generate_menu_url(check_date)
-        print(f"URLを試行中: {pdf_url}")
+    pdf_content, pdf_url = None, ""
 
+    # ★変更点: 外部からURLが指定されているか確認
+    force_url = os.getenv('FORCE_PDF_URL')
+
+    if force_url:
+        print(f"★ 強制指定されたURLを使用します: {force_url}")
+        pdf_url = force_url
         try:
             response = requests.get(pdf_url, timeout=10)
-            response.raise_for_status() 
+            response.raise_for_status()
             pdf_content = response.content
-            print(f"→ PDFを発見！ URL: {pdf_url}")
-            break 
-        except requests.exceptions.HTTPError:
-            print("→ 見つかりません。次の週を試します。")
-            continue
-    
+            print(f"→ 指定URLのPDFダウンロードに成功しました。")
+        except Exception as e:
+            print(f"→ 指定URLのダウンロードに失敗しました: {e}")
+            message_text = f"【エラー】\n指定されたURLからPDFを取得できませんでした。\nURL: {force_url}"
+            # ここで強制終了せずに、エラー通知を送る処理へ流す
+    else:
+        # 通常の自動探索
+        for i in range(3):
+            check_date = today - timedelta(weeks=i)
+            pdf_url = generate_menu_url(check_date)
+            print(f"URLを試行中: {pdf_url}")
+            try:
+                response = requests.get(pdf_url, timeout=10)
+                response.raise_for_status()
+                pdf_content = response.content
+                print(f"→ PDFを発見！ URL: {pdf_url}")
+                break
+            except requests.exceptions.HTTPError:
+                print("→ 見つかりません。次の週を試します。")
+                continue
+
+    message_text = ""
     if pdf_content:
         try:
             menu_asa, menu_hiru, menu_yoru = parse_menu_from_pdf(pdf_content, today)
             
-            # GitHub Actionsの遅延に対応した柔軟な時刻判定
-            # 朝 (6:50通知のため、6時台と7時台をカバー)
-            if now_jst.hour == 6 or now_jst.hour == 7:
-                message_text = (
-                    f"【本日の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
-                    f"■ 朝食\n{menu_asa}\n\n"
-                    f"■ 昼食\n{menu_hiru}\n\n"
-                    f"■ 夕食\n{menu_yoru}"
-                )
-            # 昼 (11:45通知のため、11時台と12時台をカバー)
-            elif now_jst.hour == 11 or now_jst.hour == 12:
-                message_text = (
-                    f"【お昼の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
-                    f"■ 昼食\n{menu_hiru}"
-                )
-            # 夕 (16:50通知のため、16時台と17時台をカバー)
-            elif now_jst.hour == 16 or now_jst.hour == 17:
-                message_text = (
-                    f"【夜ご飯の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n"
-                    f"■ 夕食\n{menu_yoru}"
-                )
+            # 手動実行時は時刻に関わらず全メニューを表示するロジックにする
+            if force_url:
+                 message_text = (f"【修正版: 本日の寮食メニュー ({today.strftime('%-m/%-d')})】\n"
+                                 f"※指定されたURLから再取得しました\n\n"
+                                 f"■ 朝食\n{menu_asa}\n\n■ 昼食\n{menu_hiru}\n\n■ 夕食\n{menu_yoru}")
             else:
-                pass
-            
+                hour = now_jst.hour
+                if 6 <= hour < 8:
+                    message_text = (f"【本日の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n■ 朝食\n{menu_asa}\n\n■ 昼食\n{menu_hiru}\n\n■ 夕食\n{menu_yoru}")
+                elif 11 <= hour < 13:
+                    message_text = (f"【お昼の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n■ 昼食\n{menu_hiru}")
+                elif 16 <= hour < 18:
+                    message_text = (f"【夜ご飯の寮食メニュー ({today.strftime('%-m/%-d')})】\n\n■ 夕食\n{menu_yoru}")
+
         except ValueError as e:
-            message_text = (
-                f"【お知らせ】\n献立表の解析に失敗しました。\n"
-                f"理由: {e}\n\n"
-                f"▼解析しようとしたPDFのURL\n{pdf_url}"
-            )
-    else:
+            message_text = f"【お知らせ】\n献立表の解析に失敗しました。\n理由: {e}\n\n▼試したURL\n{pdf_url}"
+    elif not force_url: # force_url指定で失敗した場合は既にmessage_textが入っているため
         message_text = f"【お知らせ】\n直近3週間の献立表PDFが見つかりませんでした。\n最後に試したURL: {pdf_url}"
 
     if message_text:
-        if not line_bot_api_client or not USER_ID:
-            print("環境変数が設定されていないため、LINE送信をスキップします。")
-            print(f"送信予定だったメッセージ:\n{message_text}")
-            return 'Success (skipped LINE push)', 200
-
         try:
-            line_bot_api = MessagingApi(line_bot_api_client)
-            line_bot_api.push_message(PushMessageRequest(to=USER_ID, messages=[TextMessage(text=message_text)]))
+            configuration = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
+            with ApiClient(configuration) as api_client:
+                line_bot_api = MessagingApi(api_client)
+                line_bot_api.push_message(PushMessageRequest(to=USER_ID, messages=[TextMessage(text=message_text)]))
             print("LINEメッセージを送信しました。")
         except Exception as e:
             print(f"LINE送信中にエラーが発生しました: {e}")
-            
     else:
-        print("送信するメッセージがありません。時間外か、PDFの取得・解析に失敗しました。")
-
-    return 'Success', 200
+        print("送信対象の時間外か、処理が正常に完了しませんでした。")
 
 if __name__ == '__main__':
-    main(None)
+    main()
