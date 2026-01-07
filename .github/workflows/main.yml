@@ -9,6 +9,10 @@ on:
   # 手動実行用
   workflow_dispatch:
 
+# ★重要: BOTにリポジトリへの書き込み権限を与える
+permissions:
+  contents: write
+
 jobs:
   build_and_send:
     runs-on: ubuntu-latest
@@ -26,11 +30,20 @@ jobs:
 
       - name: Run Python script
         env:
-          # ▼▼▼ 修正箇所: あなたのSecrets名に合わせて LINE_ を削除しました ▼▼▼
+          # あなたの環境(Bパターン)に合わせています
           CHANNEL_ACCESS_TOKEN: ${{ secrets.CHANNEL_ACCESS_TOKEN }}
           USER_ID: ${{ secrets.USER_ID }}
-          # ▲▲▲ 修正ここまで ▲▲▲
-          
           # 外部(GAS)からURLを受け取る設定
           FORCE_PDF_URL: ${{ github.event.client_payload.pdf_url }}
         run: python main.py
+
+      # 記憶ファイルに変更があったら保存するステップ
+      - name: Commit and Push changes
+        # URLが見つかり、保存対象になった場合のみ実行
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add menu_memory.json || true
+          # 変更がない場合はコミットしないようにする
+          git diff --staged --quiet || git commit -m "Update menu URL memory [skip ci]"
+          git push
