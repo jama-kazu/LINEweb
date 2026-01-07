@@ -26,8 +26,11 @@ jobs:
 
       - name: Run Python script
         env:
-          CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
-          USER_ID: ${{ secrets.LINE_USER_ID }}
+          # ▼▼▼ 修正箇所: あなたのSecrets名に合わせて LINE_ を削除しました ▼▼▼
+          CHANNEL_ACCESS_TOKEN: ${{ secrets.CHANNEL_ACCESS_TOKEN }}
+          USER_ID: ${{ secrets.USER_ID }}
+          # ▲▲▲ 修正ここまで ▲▲▲
+          
           # 外部(GAS)からURLを受け取る設定
           FORCE_PDF_URL: ${{ github.event.client_payload.pdf_url }}
         run: python main.py
