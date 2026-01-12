@@ -2,14 +2,12 @@ name: Send LINE Menu Notification
 
 on:
   schedule:
-    - cron: '50 21,2,7 * * *'
-  # 外部指令用 (LINE/GASから)
+    # 30分前に起動して待機する設定 (06:30, 11:30, 16:30 JST)
+    - cron: '30 21,2,7 * * *'
   repository_dispatch:
     types: [manual_fix]
-  # 手動実行用
   workflow_dispatch:
 
-# ★重要: BOTにリポジトリへの書き込み権限を与える
 permissions:
   contents: write
 
@@ -30,20 +28,17 @@ jobs:
 
       - name: Run Python script
         env:
-          # あなたの環境(Bパターン)に合わせています
           CHANNEL_ACCESS_TOKEN: ${{ secrets.CHANNEL_ACCESS_TOKEN }}
           USER_ID: ${{ secrets.USER_ID }}
-          # 外部(GAS)からURLを受け取る設定
           FORCE_PDF_URL: ${{ github.event.client_payload.pdf_url }}
         run: python main.py
 
-      # 記憶ファイルに変更があったら保存するステップ
+      # 変更の保存 (menu_memory.json と timing_stats.json の両方を保存)
       - name: Commit and Push changes
-        # URLが見つかり、保存対象になった場合のみ実行
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add menu_memory.json || true
-          # 変更がない場合はコミットしないようにする
-          git diff --staged --quiet || git commit -m "Update menu URL memory [skip ci]"
+          # ファイルがあればステージング、なければ何もしない
+          git add menu_memory.json timing_stats.json || true
+          git diff --staged --quiet || git commit -m "Update memory and timing stats [skip ci]"
           git push
