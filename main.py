@@ -16,8 +16,20 @@ CHANNEL_ACCESS_TOKEN = os.getenv('CHANNEL_ACCESS_TOKEN')
 USER_ID = os.getenv('USER_ID')
 MEMORY_FILE = 'menu_memory.json'
 TIMING_FILE = 'timing_stats.json' # 時間誤差を記録するファイル
+STATUS_FILE = 'user_status.json'  # ★追加：サービスのオン/オフ状態を記録するファイル
 
 # --- 制御用関数 ---
+def is_service_active():
+    """サービスのオン/オフ状態を確認する"""
+    if os.path.exists(STATUS_FILE):
+        try:
+            with open(STATUS_FILE, 'r') as f:
+                data = json.load(f)
+                return data.get('status') != 'stopped'
+        except Exception:
+            pass
+    return True # ファイルがない（初期状態）は有効とする
+
 def load_timing_offset():
     """前回の処理にかかった時間（秒）を読み込む"""
     if os.path.exists(TIMING_FILE):
@@ -140,12 +152,17 @@ def main():
         print("環境変数不足")
         return
 
+    # ★ 追加：サービスが停止中ならここで終了
+    if not is_service_active():
+        print("サービスが「停止」状態のため、LINE送信処理をスキップして終了します。")
+        return
+
     force_url = os.getenv('FORCE_PDF_URL')
     
-    # ★ 1. 待機実行 & ターゲット時刻取得
+    # 待機実行 & ターゲット時刻取得
     target_time = wait_until_target_time(force_url)
     
-    # ★ 2. 処理開始時間を記録（ストップウォッチ開始）
+    # 処理開始時間を記録（ストップウォッチ開始）
     process_start_time = time.time()
 
     # --- メイン処理 ---
@@ -204,7 +221,6 @@ def main():
                  message_text = (f"【修正版 ({today.strftime('%-m/%-d')})】\n朝:{menu_asa}\n昼:{menu_hiru}\n夕:{menu_yoru}")
             else:
                 h = now_jst.hour
-                # 待機ロジックにより早めに起きている可能性があるため、判定範囲を広く取る
                 if 4 <= h < 10: message_text = (f"【本日 ({today.strftime('%-m/%-d')})】\n\n■ 朝食\n{menu_asa}\n\n■ 昼食\n{menu_hiru}\n\n■ 夕食\n{menu_yoru}")
                 elif 10 <= h < 15: message_text = (f"【昼食 ({today.strftime('%-m/%-d')})】\n\n■ 昼食\n{menu_hiru}")
                 elif 15 <= h < 22: message_text = (f"【夕食 ({today.strftime('%-m/%-d')})】\n\n■ 夕食\n{menu_yoru}")
@@ -220,11 +236,10 @@ def main():
                 api.push_message(PushMessageRequest(to=USER_ID, messages=[TextMessage(text=message_text)]))
             print("LINE送信完了")
             
-            # ★ 3. 送信完了後のフィードバック記録 (手動モード以外)
+            # 送信完了後のフィードバック記録 (手動モード以外)
             if not force_url and target_time:
                 process_end_time = time.time()
                 duration = process_end_time - process_start_time
-                # PDFの取得有無にかかわらず、「処理にかかった時間」として記録する
                 save_timing_offset(duration)
                 
         except Exception as e: print(f"LINE送信エラー: {e}")
