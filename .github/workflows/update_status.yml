@@ -1,0 +1,24 @@
+name: Update User Status
+
+on:
+  repository_dispatch:
+    types: [update_status]
+
+permissions:
+  contents: write
+
+jobs:
+  update-status:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update status.json
+        run: |
+          echo '{"status": "${{ github.event.client_payload.status }}"}' > user_status.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add user_status.json
+          git commit -m "Update user status to ${{ github.event.client_payload.status }} [skip ci]" || echo "No changes to commit"
+          git push
