@@ -8,15 +8,15 @@ import requests
 import pdfplumber
 from linebot.v3.messaging import (
     Configuration, ApiClient, MessagingApi,
-    PushMessageRequest, TextMessage
+    BroadcastRequest, TextMessage  # ★ PushMessageRequest を BroadcastRequest に変更
 )
 
 # --- 設定項目 ---
 CHANNEL_ACCESS_TOKEN = os.getenv('CHANNEL_ACCESS_TOKEN')
-USER_ID = os.getenv('USER_ID')
+# USER_ID = os.getenv('USER_ID') # ★ BroadcastAPIでは不要になるためコメントアウト（または削除）可能
 MEMORY_FILE = 'menu_memory.json'
-TIMING_FILE = 'timing_stats.json' # 時間誤差を記録するファイル
-STATUS_FILE = 'user_status.json'  # ★追加：サービスのオン/オフ状態を記録するファイル
+TIMING_FILE = 'timing_stats.json' 
+STATUS_FILE = 'user_status.json'  
 
 # --- 制御用関数 ---
 def is_service_active():
@@ -28,7 +28,7 @@ def is_service_active():
                 return data.get('status') != 'stopped'
         except Exception:
             pass
-    return True # ファイルがない（初期状態）は有効とする
+    return True
 
 def load_timing_offset():
     """前回の処理にかかった時間（秒）を読み込む"""
@@ -39,7 +39,7 @@ def load_timing_offset():
                 return data.get('process_duration', 0)
         except Exception:
             pass
-    return 0 # データがなければ補正なし
+    return 0 
 
 def save_timing_offset(duration):
     """今回の処理にかかった時間を保存する"""
@@ -55,19 +55,14 @@ def save_timing_offset(duration):
         print(f"タイミング保存エラー: {e}")
 
 def wait_until_target_time(force_mode):
-    """
-    フィードバック制御付き待機関数
-    戻り値: ターゲット時刻（後で記録用に使用）
-    """
+    """フィードバック制御付き待機関数"""
     jst = ZoneInfo("Asia/Tokyo")
     now = datetime.now(jst)
     
-    # 手動モードなら待機しない
     if force_mode:
         print("★ 手動モードのため、時刻調整をスキップします。")
         return None
 
-    # 目標時刻の設定 (7, 12, 17時)
     target = None
     if now.hour == 6:
         target = now.replace(hour=7, minute=0, second=0, microsecond=0)
@@ -77,13 +72,8 @@ def wait_until_target_time(force_mode):
         target = now.replace(hour=17, minute=0, second=0, microsecond=0)
     
     if target:
-        # 前回の処理時間（オフセット）を読み込む
         offset = load_timing_offset()
-        
-        # 目標時刻からオフセット分だけ前倒しする（例: 7:00:00 - 5秒 = 6:59:55）
         adjusted_target = target - timedelta(seconds=offset)
-        
-        # 待機時間を計算
         delta = (adjusted_target - now).total_seconds()
         
         if delta > 0:
@@ -97,7 +87,7 @@ def wait_until_target_time(force_mode):
             
     return target
 
-# --- 以下、既存のロジック ---
+# --- メニュー抽出ロジック ---
 def make_url_from_date(date_obj):
     year_str = str(date_obj.year)
     month_str = f"{date_obj.month:02d}"
@@ -148,21 +138,18 @@ def parse_menu_from_pdf(pdf_content, target_date):
     return menu_asa, menu_hiru, menu_yoru
 
 def main():
-    if not CHANNEL_ACCESS_TOKEN or not USER_ID:
-        print("環境変数不足")
+    # ★ USER_IDのチェックを外し、CHANNEL_ACCESS_TOKENのみを必須に変更
+    if not CHANNEL_ACCESS_TOKEN:
+        print("環境変数不足(CHANNEL_ACCESS_TOKENがありません)")
         return
 
-    # ★ 追加：サービスが停止中ならここで終了
+    # サービスが停止中ならここで終了
     if not is_service_active():
         print("サービスが「停止」状態のため、LINE送信処理をスキップして終了します。")
         return
 
     force_url = os.getenv('FORCE_PDF_URL')
-    
-    # 待機実行 & ターゲット時刻取得
     target_time = wait_until_target_time(force_url)
-    
-    # 処理開始時間を記録（ストップウォッチ開始）
     process_start_time = time.time()
 
     # --- メイン処理 ---
@@ -233,8 +220,9 @@ def main():
             cfg = Configuration(access_token=CHANNEL_ACCESS_TOKEN)
             with ApiClient(cfg) as client:
                 api = MessagingApi(client)
-                api.push_message(PushMessageRequest(to=USER_ID, messages=[TextMessage(text=message_text)]))
-            print("LINE送信完了")
+                # ★ 変更部分: PushMessageRequest を BroadcastRequest に変更し、toの指定を削除
+                api.broadcast(BroadcastRequest(messages=[TextMessage(text=message_text)]))
+            print("LINE一斉送信完了")
             
             # 送信完了後のフィードバック記録 (手動モード以外)
             if not force_url and target_time:
